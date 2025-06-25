@@ -3,7 +3,7 @@ name = "legal-spend-mcp"
 version = "0.1.0"
 description = "MCP server for legal spend intelligence across multiple data sources"
 authors = [
-    {name = "DatSciX-CEO", email = "contact@datscix.com"}
+    {name = "DatSciX", email = "patrick@datscix.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
