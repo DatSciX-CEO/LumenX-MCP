@@ -1,5 +1,5 @@
 # GitHub Actions
-.github/workflows/
+.github
 
 # Python
 __pycache__/
