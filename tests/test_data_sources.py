@@ -21,8 +21,27 @@ class TestLegalTrackerDataSource:
     """Test LegalTracker API data source"""
     
     @pytest.mark.asyncio
-    async def test_get_spend_data_success(self, mock_data_source_config, mock_httpx_client):
+    async def test_get_spend_data_success(self, mock_data_source_config, mocker):
         """Test successful spend data retrieval from API"""
+        
+        mock_httpx_client = mocker.AsyncMock()
+        mock_response = mocker.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "invoices": [{
+                "id": "INV-001",
+                "vendor": {"name": "Test Vendor"},
+                "matter": {"id": "MATT-001", "name": "Test Matter"},
+                "department": "Legal",
+                "practice_area": "Corporate",
+                "invoice_date": "2024-01-15",
+                "amount": "15000.00",
+                "currency": "USD",
+                "description": "Test invoice"
+            }]
+        }
+        mock_response.raise_for_status = mocker.Mock()
+        mock_httpx_client.get.return_value = mock_response
         
         with patch('legal_spend_mcp.data_sources.httpx.AsyncClient', return_value=mock_httpx_client):
             source = LegalTrackerDataSource(mock_data_source_config)
@@ -39,8 +58,27 @@ class TestLegalTrackerDataSource:
             assert records[0].source_system == "LegalTracker"
     
     @pytest.mark.asyncio
-    async def test_get_spend_data_with_filters(self, mock_data_source_config, mock_httpx_client):
+    async def test_get_spend_data_with_filters(self, mock_data_source_config, mocker):
         """Test spend data retrieval with filters"""
+        
+        mock_httpx_client = mocker.AsyncMock()
+        mock_response = mocker.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "invoices": [{
+                "id": "INV-001",
+                "vendor": {"name": "Test Vendor"},
+                "matter": {"id": "MATT-001", "name": "Test Matter"},
+                "department": "Legal",
+                "practice_area": "Corporate",
+                "invoice_date": "2024-01-15",
+                "amount": "15000.00",
+                "currency": "USD",
+                "description": "Test invoice"
+            }]
+        }
+        mock_response.raise_for_status = mocker.Mock()
+        mock_httpx_client.get.return_value = mock_response
         
         with patch('legal_spend_mcp.data_sources.httpx.AsyncClient', return_value=mock_httpx_client):
             source = LegalTrackerDataSource(mock_data_source_config)
@@ -57,12 +95,13 @@ class TestLegalTrackerDataSource:
             call_args = mock_httpx_client.get.call_args
             assert call_args[1]['params']['department'] == 'Legal'
             assert call_args[1]['params']['vendor'] == 'Test Vendor'
+            assert len(records) == 1
     
     @pytest.mark.asyncio
-    async def test_get_spend_data_api_error(self, mock_data_source_config):
+    async def test_get_spend_data_api_error(self, mock_data_source_config, mocker):
         """Test handling of API errors"""
         
-        mock_client = AsyncMock()
+        mock_client = mocker.AsyncMock()
         mock_client.get.side_effect = Exception("API Error")
         
         with patch('legal_spend_mcp.data_sources.httpx.AsyncClient', return_value=mock_client):
@@ -76,20 +115,20 @@ class TestLegalTrackerDataSource:
             assert records == []
     
     @pytest.mark.asyncio
-    async def test_get_vendors_success(self, mock_data_source_config):
+    async def test_get_vendors_success(self, mock_data_source_config, mocker):
         """Test successful vendor retrieval"""
         
-        mock_client = AsyncMock()
-        mock_response = Mock()
+        mock_client = mocker.AsyncMock()
+        mock_response = mocker.Mock()
         mock_response.status_code = 200
-        mock_response.json = Mock(return_value={
+        mock_response.json.return_value = {
             "vendors": [
                 {"id": "V1", "name": "Vendor 1", "type": "Law Firm"},
                 {"id": "V2", "name": "Vendor 2", "type": "Consultant"}
             ]
-        })
-        mock_response.raise_for_status = Mock()
-        mock_client.get = AsyncMock(return_value=mock_response)
+        }
+        mock_response.raise_for_status = mocker.Mock()
+        mock_client.get.return_value = mock_response
         
         with patch('legal_spend_mcp.data_sources.httpx.AsyncClient', return_value=mock_client):
             source = LegalTrackerDataSource(mock_data_source_config)
@@ -100,13 +139,13 @@ class TestLegalTrackerDataSource:
             assert vendors[1]["type"] == "Consultant"
     
     @pytest.mark.asyncio
-    async def test_connection(self, mock_data_source_config):
+    async def test_connection(self, mock_data_source_config, mocker):
         """Test API connection check"""
         
-        mock_client = AsyncMock()
-        mock_response = Mock()
+        mock_client = mocker.AsyncMock()
+        mock_response = mocker.Mock()
         mock_response.status_code = 200
-        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client.get.return_value = mock_response
         
         with patch('legal_spend_mcp.data_sources.httpx.AsyncClient', return_value=mock_client):
             source = LegalTrackerDataSource(mock_data_source_config)
@@ -123,7 +162,7 @@ class TestLegalTrackerDataSource:
 class TestDatabaseDataSource:
     """Test database data source"""
     
-    def test_create_engine_postgresql(self):
+    def test_create_engine_postgresql(self, mocker):
         """Test PostgreSQL engine creation"""
         config = DataSourceConfig(
             name="test_pg",
@@ -139,13 +178,13 @@ class TestDatabaseDataSource:
             }
         )
         
-        with patch('legal_spend_mcp.data_sources.create_engine') as mock_create:
-            source = DatabaseDataSource(config)
-            mock_create.assert_called_once_with(
-                "postgresql://user:pass@localhost:5432/testdb"
-            )
+        mock_create_engine = mocker.patch('legal_spend_mcp.data_sources.create_engine')
+        source = DatabaseDataSource(config)
+        mock_create_engine.assert_called_once_with(
+            "postgresql://user:pass@localhost:5432/testdb"
+        )
     
-    def test_create_engine_mssql(self):
+    def test_create_engine_mssql(self, mocker):
         """Test SQL Server engine creation"""
         config = DataSourceConfig(
             name="test_mssql",
@@ -161,11 +200,11 @@ class TestDatabaseDataSource:
             }
         )
         
-        with patch('legal_spend_mcp.data_sources.create_engine') as mock_create:
-            source = DatabaseDataSource(config)
-            mock_create.assert_called_once_with(
-                "mssql+pymssql://user:pass@localhost:1433/testdb"
-            )
+        mock_create_engine = mocker.patch('legal_spend_mcp.data_sources.create_engine')
+        source = DatabaseDataSource(config)
+        mock_create_engine.assert_called_once_with(
+            "mssql+pymssql://user:pass@localhost:1433/testdb"
+        )
     
     def test_create_engine_unsupported(self):
         """Test unsupported database driver"""
@@ -183,7 +222,7 @@ class TestDatabaseDataSource:
             DatabaseDataSource(config)
     
     @pytest.mark.asyncio
-    async def test_get_spend_data(self, mock_database_engine):
+    async def test_get_spend_data(self, mock_database_engine, mocker):
         """Test getting spend data from database"""
         config = DataSourceConfig(
             name="test_db",
@@ -199,21 +238,21 @@ class TestDatabaseDataSource:
             }
         )
         
-        with patch('legal_spend_mcp.data_sources.create_engine', return_value=mock_database_engine):
-            source = DatabaseDataSource(config)
-            
-            records = await source.get_spend_data(
-                start_date=date(2024, 1, 1),
-                end_date=date(2024, 3, 31)
-            )
-            
-            assert len(records) == 1
-            assert records[0].invoice_id == "INV-001"
-            assert records[0].vendor_name == "Test Vendor"
-            assert records[0].source_system == "test_db"
+        mocker.patch('legal_spend_mcp.data_sources.create_engine', return_value=mock_database_engine)
+        source = DatabaseDataSource(config)
+        
+        records = await source.get_spend_data(
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 31)
+        )
+        
+        assert len(records) == 1
+        assert records[0].invoice_id == "INV-001"
+        assert records[0].vendor_name == "Test Vendor"
+        assert records[0].source_system == "test_db"
     
     @pytest.mark.asyncio
-    async def test_get_spend_data_with_filters(self, mock_database_engine):
+    async def test_get_spend_data_with_filters(self, mock_database_engine, mocker):
         """Test database query with filters"""
         config = DataSourceConfig(
             name="test_db",
@@ -229,28 +268,28 @@ class TestDatabaseDataSource:
             }
         )
         
-        with patch('legal_spend_mcp.data_sources.create_engine', return_value=mock_database_engine):
-            source = DatabaseDataSource(config)
-            
-            filters = {
-                "vendor": "Test",
-                "department": "Legal",
-                "practice_area": "Corporate"
-            }
-            
-            records = await source.get_spend_data(
-                start_date=date(2024, 1, 1),
-                end_date=date(2024, 3, 31),
-                filters=filters
-            )
-            
-            # Verify the query was executed with filters
-            conn = mock_database_engine.connect().__enter__()
-            conn.execute.assert_called_once()
-            query_call = conn.execute.call_args[0][0]
-            assert "vendor_name" in str(query_call)
-            assert "department" in str(query_call)
-            assert "practice_area" in str(query_call)
+        mocker.patch('legal_spend_mcp.data_sources.create_engine', return_value=mock_database_engine)
+        source = DatabaseDataSource(config)
+        
+        filters = {
+            "vendor": "Test",
+            "department": "Legal",
+            "practice_area": "Corporate"
+        }
+        
+        records = await source.get_spend_data(
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 31),
+            filters=filters
+        )
+        
+        # Verify the query was executed with filters
+        conn = mock_database_engine.connect().__enter__()
+        conn.execute.assert_called_once()
+        query_call = conn.execute.call_args[0][0]
+        assert "vendor_name" in str(query_call)
+        assert "department" in str(query_call)
+        assert "practice_area" in str(query_call)
 
 
 class TestFileDataSource:
@@ -376,31 +415,31 @@ class TestDataSourceManager:
     """Test data source manager"""
     
     @pytest.mark.asyncio
-    async def test_initialize_sources(self, mock_config):
+    async def test_initialize_sources(self, mock_config, mocker):
         """Test initialization of data sources"""
         manager = DataSourceManager()
         
         # Mock the data source creation
-        mock_source = AsyncMock()
-        mock_source.test_connection = AsyncMock(return_value=True)
+        mock_source = mocker.AsyncMock()
+        mock_source.test_connection.return_value = True
         
-        with patch('legal_spend_mcp.data_sources.create_data_source', return_value=mock_source):
-            await manager.initialize_sources(mock_config)
-            
-            assert len(manager.sources) == 1
-            assert "test_api" in manager.sources
+        mocker.patch('legal_spend_mcp.data_sources.create_data_source', return_value=mock_source)
+        await manager.initialize_sources(mock_config)
+        
+        assert len(manager.sources) == 1
+        assert "test_api" in manager.sources
     
     @pytest.mark.asyncio
-    async def test_get_spend_data_all_sources(self, sample_spend_records):
+    async def test_get_spend_data_all_sources(self, sample_spend_records, mocker):
         """Test getting data from all sources"""
         manager = DataSourceManager()
         
         # Mock two data sources
-        source1 = AsyncMock()
-        source1.get_spend_data = AsyncMock(return_value=sample_spend_records[:5])
+        source1 = mocker.AsyncMock()
+        source1.get_spend_data.return_value = sample_spend_records[:5]
         
-        source2 = AsyncMock()
-        source2.get_spend_data = AsyncMock(return_value=sample_spend_records[5:])
+        source2 = mocker.AsyncMock()
+        source2.get_spend_data.return_value = sample_spend_records[5:]
         
         manager.sources = {"source1": source1, "source2": source2}
         
@@ -414,15 +453,15 @@ class TestDataSourceManager:
         source2.get_spend_data.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_spend_data_specific_source(self, sample_spend_records):
+    async def test_get_spend_data_specific_source(self, sample_spend_records, mocker):
         """Test getting data from specific source"""
         manager = DataSourceManager()
         
-        source1 = AsyncMock()
-        source1.get_spend_data = AsyncMock(return_value=sample_spend_records[:5])
+        source1 = mocker.AsyncMock()
+        source1.get_spend_data.return_value = sample_spend_records[:5]
         
-        source2 = AsyncMock()
-        source2.get_spend_data = AsyncMock(return_value=[])
+        source2 = mocker.AsyncMock()
+        source2.get_spend_data.return_value = []
         
         manager.sources = {"source1": source1, "source2": source2}
         
@@ -452,7 +491,7 @@ class TestDataSourceManager:
         assert len(summary.top_vendors) <= 5
         assert len(summary.top_matters) <= 5
         assert "Legal" in summary.by_department
-        assert "Corporate" in summary.by_practice_area.values()
+        assert PracticeArea.CORPORATE.value in summary.by_practice_area.keys()
     
     @pytest.mark.asyncio
     async def test_calculate_spend_trend(self, sample_spend_records):
@@ -467,13 +506,13 @@ class TestDataSourceManager:
         assert "monthly_totals" in trend
     
     @pytest.mark.asyncio
-    async def test_search_transactions(self, sample_spend_records):
+    async def test_search_transactions(self, sample_spend_records, mocker):
         """Test transaction search"""
         manager = DataSourceManager()
         
         # Mock data source
-        source = AsyncMock()
-        source.get_spend_data = AsyncMock(return_value=sample_spend_records)
+        source = mocker.AsyncMock()
+        source.get_spend_data.return_value = sample_spend_records
         manager.sources = {"test": source}
         
         results = await manager.search_transactions(
@@ -498,24 +537,24 @@ class TestDataSourceFactory:
             name="legaltracker_api",
             type="api",
             enabled=True,
-            connection_params={"api_key": "test"}
+            connection_params={"api_key": "test", "base_url": "https://test.api.com"}
         )
         
         source = create_data_source(config)
         assert isinstance(source, LegalTrackerDataSource)
     
-    def test_create_database_data_source(self):
+    def test_create_database_data_source(self, mocker):
         """Test creating database data source"""
         config = DataSourceConfig(
             name="test_db",
             type="database",
             enabled=True,
-            connection_params={"driver": "postgresql"}
+            connection_params={"driver": "postgresql", "username": "user", "password": "pass", "host": "localhost", "port": 5432, "database": "testdb"}
         )
         
-        with patch('legal_spend_mcp.data_sources.create_engine'):
-            source = create_data_source(config)
-            assert isinstance(source, DatabaseDataSource)
+        mocker.patch('legal_spend_mcp.data_sources.create_engine')
+        source = create_data_source(config)
+        assert isinstance(source, DatabaseDataSource)
     
     def test_create_file_data_source(self):
         """Test creating file data source"""

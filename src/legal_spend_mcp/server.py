@@ -61,17 +61,17 @@ async def get_legal_spend_summary(
     data_source: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Get legal spend summary for specified period with optional filters[cite: 384].
+    Get legal spend summary for specified period with optional filters.
     Args:
-        start_date: Start date in YYYY-MM-DD format [cite: 385]
-        end_date: End date in YYYY-MM-DD format [cite: 385]
-        department: Filter by department name (optional) [cite: 385]
-        practice_area: Filter by practice area (optional) [cite: 385]
-        vendor: Filter by vendor name (optional) [cite: 385]
-        data_source: Query specific data source (optional) [cite: 385]
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format
+        department: Filter by department name (optional)
+        practice_area: Filter by practice area (optional)
+        vendor: Filter by vendor name (optional)
+        data_source: Query specific data source (optional)
     
     Returns:
-        Dictionary containing spend summary with totals, breakdowns, and insights [cite: 386]
+        Dictionary containing spend summary with totals, breakdowns, and insights
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
@@ -84,15 +84,15 @@ async def get_legal_spend_summary(
         # Build filters
         filters = {}
         if department:
-            filters["department"] = department [cite: 387]
+            filters["department"] = department
         if practice_area:
-            filters["practice_area"] = practice_area [cite: 387]
+            filters["practice_area"] = practice_area
         if vendor:
-            filters["vendor"] = vendor [cite: 387]
+            filters["vendor"] = vendor
         
         # Get data from specified source or all sources
         spend_data = await data_manager.get_spend_data(
-           start_dt, end_dt, filters, data_source [cite: 388]
+           start_dt, end_dt, filters, data_source
         )
         
         # Generate summary
@@ -101,13 +101,13 @@ async def get_legal_spend_summary(
         return {
             "period": f"{start_date} to {end_date}",
             "total_amount": float(summary.total_amount),
-            "currency": summary.currency, [cite: 389]
+            "currency": summary.currency,
             "record_count": summary.record_count,
             "top_vendors": summary.top_vendors,
             "top_matters": summary.top_matters,
             "by_department": {k: float(v) for k, v in summary.by_department.items()},
             "by_practice_area": {k: float(v) for k, v in summary.by_practice_area.items()},
-            "data_sources_used": data_manager.get_active_sources(), [cite: 390]
+            "data_sources_used": data_manager.get_active_sources(),
             "filters_applied": filters
         }
         
@@ -124,22 +124,22 @@ async def get_vendor_performance(
     include_benchmarks: bool = False
 ) -> Dict[str, Any]:
     """
-    Analyze performance and spend patterns for a specific vendor[cite: 391].
+    Analyze performance and spend patterns for a specific vendor.
     Args:
-        vendor_name: Name of the vendor/law firm to analyze [cite: 392]
-        start_date: Start date in YYYY-MM-DD format [cite: 392]
-        end_date: End date in YYYY-MM-DD format [cite: 392]
-        include_benchmarks: Include industry benchmark comparisons [cite: 392]
+        vendor_name: Name of the vendor/law firm to analyze
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format
+        include_benchmarks: Include industry benchmark comparisons
     
     Returns:
-        Dictionary containing vendor performance metrics and analysis [cite: 392]
+        Dictionary containing vendor performance metrics and analysis
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
     
     try:
-        start_dt = datetime.strptime(start_date, "%Y-%m-%d").date() [cite: 393]
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d").date() [cite: 393]
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
         
         # Get vendor-specific data
         vendor_data = await data_manager.get_vendor_data(vendor_name, start_dt, end_dt)
@@ -148,29 +148,29 @@ async def get_vendor_performance(
             return {"error": f"No data found for vendor: {vendor_name}"}
         
         # Calculate performance metrics
-        total_spend = sum(float(record.amount) for record in vendor_data) [cite: 394]
-        avg_invoice = total_spend / len(vendor_data) [cite: 394]
+        total_spend = sum(float(record.amount) for record in vendor_data)
+        avg_invoice = total_spend / len(vendor_data)
         
         # Group by matter
         matter_breakdown = {}
         for record in vendor_data:
             matter = record.matter_name or "General"
             if matter not in matter_breakdown:
-                matter_breakdown[matter] = {"count": 0, "total": 0} [cite: 395]
+                matter_breakdown[matter] = {"count": 0, "total": 0}
             matter_breakdown[matter]["count"] += 1
             matter_breakdown[matter]["total"] += float(record.amount)
         
         result = {
             "vendor_name": vendor_name,
-            "analysis_period": f"{start_date} to {end_date}", [cite: 396]
+            "analysis_period": f"{start_date} to {end_date}",
             "performance_metrics": {
                 "total_spend": total_spend,
                 "invoice_count": len(vendor_data),
                 "average_invoice_amount": avg_invoice,
                 "currency": vendor_data[0].currency if vendor_data else "USD"
             },
-            "matter_breakdown": matter_breakdown, [cite: 397]
-            "spend_trend": await data_manager.calculate_spend_trend(vendor_data) [cite: 397]
+            "matter_breakdown": matter_breakdown,
+            "spend_trend": await data_manager.calculate_spend_trend(vendor_data)
         }
         
         # Add benchmarks if requested
@@ -178,7 +178,7 @@ async def get_vendor_performance(
             benchmarks = await data_manager.get_vendor_benchmarks(vendor_name)
             result["industry_benchmarks"] = benchmarks
         
-        return result [cite: 398]
+        return result
         
     except ValueError as e:
         return {"error": f"Invalid date format: {e}"}
@@ -193,23 +193,23 @@ async def get_budget_vs_actual(
     budget_amount: float
 ) -> Dict[str, Any]:
     """
-    Compare actual legal spend against budget for a department[cite: 399].
+    Compare actual legal spend against budget for a department.
     
     Args:
-        department: Department name to analyze [cite: 399]
-        start_date: Start date in YYYY-MM-DD format [cite: 399]
-        end_date: End date in YYYY-MM-DD format [cite: 399]
-        budget_amount: Budget amount to compare against [cite: 399]
+        department: Department name to analyze
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format
+        budget_amount: Budget amount to compare against
     
     Returns:
-        Dictionary containing budget vs actual analysis with variance [cite: 399]
+        Dictionary containing budget vs actual analysis with variance
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
     
     try:
-        start_dt = datetime.strptime(start_date, "%Y-%m-%d").date() [cite: 400]
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d").date() [cite: 400]
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
         
         # Get department spend data
         dept_data = await data_manager.get_department_spend(department, start_dt, end_dt)
@@ -217,28 +217,28 @@ async def get_budget_vs_actual(
         if not dept_data:
             return {"error": f"No spend data found for department: {department}"}
         
-        actual_spend = sum(float(record.amount) for record in dept_data) [cite: 401]
-        variance = actual_spend - budget_amount [cite: 401]
-        variance_pct = (variance / budget_amount * 100) if budget_amount > 0 else 0 [cite: 401]
+        actual_spend = sum(float(record.amount) for record in dept_data)
+        variance = actual_spend - budget_amount
+        variance_pct = (variance / budget_amount * 100) if budget_amount > 0 else 0
         
         # Monthly breakdown
         monthly_spend = await data_manager.get_monthly_breakdown(dept_data)
         
         return {
-            "department": department, [cite: 402]
-            "analysis_period": f"{start_date} to {end_date}", [cite: 402]
+            "department": department,
+            "analysis_period": f"{start_date} to {end_date}",
             "budget_analysis": {
                 "budget_amount": budget_amount,
                 "actual_spend": actual_spend,
                 "variance": variance,
-                "variance_percentage": variance_pct, [cite: 403]
-                "status": "over_budget" if variance > 0 else "under_budget" [cite: 403]
+                "variance_percentage": variance_pct,
+                "status": "over_budget" if variance > 0 else "under_budget"
             },
             "monthly_breakdown": monthly_spend,
             "transaction_count": len(dept_data),
             "recommendations": await data_manager.generate_budget_recommendations(
                 variance_pct, dept_data
-            ) [cite: 404]
+            )
         }
         
     except ValueError as e:
@@ -253,20 +253,20 @@ async def search_legal_transactions(
     end_date: Optional[str] = None,
     min_amount: Optional[float] = None,
     max_amount: Optional[float] = None,
-    limit: int = 50 [cite: 405]
+    limit: int = 50
 ) -> List[Dict[str, Any]]:
     """
-    Search for legal transactions based on description, vendor, or matter[cite: 405].
+    Search for legal transactions based on description, vendor, or matter.
     Args:
-        search_term: Search term to match against description, vendor, matter [cite: 406]
-        start_date: Start date filter (YYYY-MM-DD, optional) [cite: 406]
-        end_date: End date filter (YYYY-MM-DD, optional) [cite: 406]
-        min_amount: Minimum transaction amount (optional) [cite: 406]
-        max_amount: Maximum transaction amount (optional) [cite: 406]
-        limit: Maximum number of results to return (default 50) [cite: 406]
+        search_term: Search term to match against description, vendor, matter
+        start_date: Start date filter (YYYY-MM-DD, optional)
+        end_date: End date filter (YYYY-MM-DD, optional)
+        min_amount: Minimum transaction amount (optional)
+        max_amount: Maximum transaction amount (optional)
+        limit: Maximum number of results to return (default 50)
     
     Returns:
-        List of matching transactions with details [cite: 407]
+        List of matching transactions with details
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
@@ -277,52 +277,52 @@ async def search_legal_transactions(
             end_dt = date.today()
             start_dt = date(end_dt.year, 1, 1)  # Start of current year
         else:
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d").date() [cite: 408]
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d").date() [cite: 408]
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
         
         # Search across all data sources
         matching_records = await data_manager.search_transactions(
             search_term=search_term,
             start_date=start_dt,
             end_date=end_dt,
-            min_amount=min_amount, [cite: 409]
-            max_amount=max_amount, [cite: 409]
-            limit=limit [cite: 409]
+            min_amount=min_amount,
+            max_amount=max_amount,
+            limit=limit
         )
         
         # Format results
         results = []
         for record in matching_records:
             results.append({
-                "transaction_id": record.invoice_id, [cite: 410]
+                "transaction_id": record.invoice_id,
                 "date": record.invoice_date.isoformat(),
                 "vendor_name": record.vendor_name,
                 "matter_name": record.matter_name,
                 "amount": float(record.amount),
                 "currency": record.currency,
-                "description": record.description, [cite: 411]
-                "department": record.department, [cite: 411]
-                "practice_area": record.practice_area, [cite: 411]
-                "data_source": getattr(record, 'source_system', 'unknown') [cite: 411]
+                "description": record.description,
+                "department": record.department,
+                "practice_area": record.practice_area,
+                "data_source": getattr(record, 'source_system', 'unknown')
             })
         
         return results
         
     except ValueError as e:
-        return [{"error": f"Invalid date format: {e}"}] [cite: 412]
+        return [{"error": f"Invalid date format: {e}"}]
     except Exception as e:
-        return [{"error": f"Search failed: {e}"}] [cite: 412]
+        return [{"error": f"Search failed: {e}"}]
 
 # ===========================================
 # MCP RESOURCES (Following Official Patterns)
 # ===========================================
 
-@mcp.resource("legal_vendors")
+@mcp.resource("legal-spend-mcp://resources/legal_vendors")
 async def get_legal_vendors() -> str:
     """
-    Get list of all legal vendors across all data sources[cite: 412].
+    Get list of all legal vendors across all data sources.
     Returns:
-        JSON string containing vendor information [cite: 413]
+        JSON string containing vendor information
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
@@ -333,17 +333,17 @@ async def get_legal_vendors() -> str:
             "vendors": vendors,
             "total_count": len(vendors),
             "data_sources": data_manager.get_active_sources(),
-            "last_updated": datetime.utcnow().isoformat() [cite: 414]
+            "last_updated": datetime.utcnow().isoformat()
         }, indent=2)
     except Exception as e:
         return json.dumps({"error": f"Failed to get vendors: {e}"})
 
-@mcp.resource("data_sources") 
+@mcp.resource("legal-spend-mcp://resources/data_sources") 
 async def get_data_sources() -> str:
     """
-    Get information about configured data sources and their status[cite: 415].
+    Get information about configured data sources and their status.
     Returns:
-        JSON string containing data source status information [cite: 415]
+        JSON string containing data source status information
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
@@ -353,18 +353,18 @@ async def get_data_sources() -> str:
         return json.dumps({
             "data_sources": sources_status,
             "active_count": len([s for s in sources_status if s.get("status") == "active"]),
-            "total_configured": len(sources_status), [cite: 416]
-            "last_checked": datetime.utcnow().isoformat() [cite: 416]
+            "total_configured": len(sources_status),
+            "last_checked": datetime.utcnow().isoformat()
         }, indent=2)
     except Exception as e:
         return json.dumps({"error": f"Failed to get data sources status: {e}"})
 
-@mcp.resource("spend_categories")
+@mcp.resource("legal-spend-mcp://resources/spend_categories")
 async def get_spend_categories() -> str:
     """
-    Get available legal spend categories and practice areas[cite: 417].
+    Get available legal spend categories and practice areas.
     Returns:
-        JSON string containing category information [cite: 417]
+        JSON string containing category information
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
@@ -375,18 +375,18 @@ async def get_spend_categories() -> str:
             "expense_categories": categories.get("expense_categories", []),
             "practice_areas": categories.get("practice_areas", []),
             "departments": categories.get("departments", []),
-            "matter_types": categories.get("matter_types", []), [cite: 418]
-            "data_completeness": categories.get("completeness_score", 0) [cite: 418]
+            "matter_types": categories.get("matter_types", []),
+            "data_completeness": categories.get("completeness_score", 0)
         }, indent=2)
     except Exception as e:
         return json.dumps({"error": f"Failed to get spend categories: {e}"})
 
-@mcp.resource("spend_overview://recent")
+@mcp.resource("legal-spend-mcp://resources/spend_overview/recent")
 async def get_recent_spend_overview() -> str:
     """
-    Get overview of recent legal spend activity (last 30 days)[cite: 419].
+    Get overview of recent legal spend activity (last 30 days).
     Returns:
-        JSON string containing recent spend overview [cite: 419]
+        JSON string containing recent spend overview
     """
     ctx = mcp.request_context
     data_manager = ctx.lifespan_context.data_manager
@@ -398,14 +398,14 @@ async def get_recent_spend_overview() -> str:
         
         overview = await data_manager.get_spend_overview(start_date, end_date)
         
-        return json.dumps({ [cite: 420]
+        return json.dumps({
             "period": f"Last 30 days ({start_date} to {end_date})",
             "total_spend": float(overview.get("total_spend", 0)),
             "transaction_count": overview.get("transaction_count", 0),
             "active_vendors": overview.get("active_vendors", 0),
             "top_categories": overview.get("top_categories", []),
             "alerts": overview.get("alerts", []),
-            "trends": overview.get("trends", {}) [cite: 421]
+            "trends": overview.get("trends", {})
         }, indent=2)
     except Exception as e:
         return json.dumps({"error": f"Failed to get recent overview: {e}"})

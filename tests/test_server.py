@@ -1,7 +1,7 @@
 import pytest
 from datetime import date, datetime
 from decimal import Decimal
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 import json
 
 from legal_spend_mcp.server import (
@@ -23,7 +23,7 @@ class TestMCPTools:
     """Test MCP tool implementations"""
     
     @pytest.mark.asyncio
-    async def test_get_legal_spend_summary_success(self, mock_data_manager, sample_spend_records):
+    async def test_get_legal_spend_summary_success(self, mock_data_manager, sample_spend_records, mocker):
         """Test successful legal spend summary retrieval"""
         # Setup mock
         mock_data_manager.get_spend_data.return_value = sample_spend_records
@@ -40,19 +40,22 @@ class TestMCPTools:
         )
         
         # Create mock context
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        # Test with mocked context
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_legal_spend_summary(
-                start_date="2024-01-01",
-                end_date="2024-03-31",
-                department="Legal"
-            )
+        # Create a mock mcp object and set its request_context
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_legal_spend_summary(
+            start_date="2024-01-01",
+            end_date="2024-03-31",
+            department="Legal"
+        )
         
         # Assertions
         assert result["total_amount"] == 145000.0
@@ -66,25 +69,28 @@ class TestMCPTools:
         mock_data_manager.generate_summary.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_legal_spend_summary_invalid_date(self, mock_data_manager):
+    async def test_get_legal_spend_summary_invalid_date(self, mock_data_manager, mocker):
         """Test legal spend summary with invalid date format"""
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_legal_spend_summary(
-                start_date="invalid-date",
-                end_date="2024-03-31"
-            )
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_legal_spend_summary(
+            start_date="invalid-date",
+            end_date="2024-03-31"
+        )
         
         assert "error" in result
         assert "Invalid date format" in result["error"]
     
     @pytest.mark.asyncio
-    async def test_get_vendor_performance_success(self, mock_data_manager, sample_spend_records):
+    async def test_get_vendor_performance_success(self, mock_data_manager, sample_spend_records, mocker):
         """Test successful vendor performance analysis"""
         # Setup mock
         vendor_records = [r for r in sample_spend_records if r.vendor_name == "Smith & Associates"]
@@ -99,19 +105,22 @@ class TestMCPTools:
             "cost_efficiency_score": 0.85
         }
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_vendor_performance(
-                vendor_name="Smith & Associates",
-                start_date="2024-01-01",
-                end_date="2024-03-31",
-                include_benchmarks=True
-            )
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_vendor_performance(
+            vendor_name="Smith & Associates",
+            start_date="2024-01-01",
+            end_date="2024-03-31",
+            include_benchmarks=True
+        )
         
         # Assertions
         assert result["vendor_name"] == "Smith & Associates"
@@ -121,7 +130,7 @@ class TestMCPTools:
         assert result["spend_trend"]["trend"] == "increasing"
     
     @pytest.mark.asyncio
-    async def test_get_budget_vs_actual_success(self, mock_data_manager, sample_spend_records):
+    async def test_get_budget_vs_actual_success(self, mock_data_manager, sample_spend_records, mocker):
         """Test budget vs actual comparison"""
         # Setup mock
         dept_records = [r for r in sample_spend_records if r.department == "Legal"]
@@ -136,19 +145,22 @@ class TestMCPTools:
             "Monitor spending closely for the remainder of the period"
         ]
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_budget_vs_actual(
-                department="Legal",
-                start_date="2024-01-01",
-                end_date="2024-03-31",
-                budget_amount=90000.0
-            )
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_budget_vs_actual(
+            department="Legal",
+            start_date="2024-01-01",
+            end_date="2024-03-31",
+            budget_amount=90000.0
+        )
         
         # Assertions
         assert result["department"] == "Legal"
@@ -159,25 +171,28 @@ class TestMCPTools:
         assert len(result["recommendations"]) == 2
     
     @pytest.mark.asyncio
-    async def test_search_legal_transactions_success(self, mock_data_manager, sample_spend_records):
+    async def test_search_legal_transactions_success(self, mock_data_manager, sample_spend_records, mocker):
         """Test transaction search functionality"""
         # Setup mock
         mock_data_manager.search_transactions.return_value = sample_spend_records[:3]
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await search_legal_transactions(
-                search_term="Smith",
-                start_date="2024-01-01",
-                end_date="2024-03-31",
-                min_amount=10000.0,
-                limit=10
-            )
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await search_legal_transactions(
+            search_term="Smith",
+            start_date="2024-01-01",
+            end_date="2024-03-31",
+            min_amount=10000.0,
+            limit=10
+        )
         
         # Assertions
         assert isinstance(result, list)
@@ -191,7 +206,7 @@ class TestMCPResources:
     """Test MCP resource implementations"""
     
     @pytest.mark.asyncio
-    async def test_get_legal_vendors(self, mock_data_manager):
+    async def test_get_legal_vendors(self, mock_data_manager, mocker):
         """Test legal vendors resource"""
         # Setup mock
         mock_data_manager.get_all_vendors.return_value = [
@@ -199,14 +214,17 @@ class TestMCPResources:
             {"id": "2", "name": "Jones Legal", "type": "Law Firm", "source": "test"}
         ]
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_legal_vendors()
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_legal_vendors()
         
         # Parse JSON result
         data = json.loads(result)
@@ -219,7 +237,7 @@ class TestMCPResources:
         assert "last_updated" in data
     
     @pytest.mark.asyncio
-    async def test_get_data_sources(self, mock_data_manager):
+    async def test_get_data_sources(self, mock_data_manager, mocker):
         """Test data sources status resource"""
         # Setup mock
         mock_data_manager.get_sources_status.return_value = [
@@ -227,14 +245,17 @@ class TestMCPResources:
             {"name": "test_db", "type": "database", "status": "disconnected", "enabled": True}
         ]
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_data_sources()
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_data_sources()
         
         # Parse JSON result
         data = json.loads(result)
@@ -246,7 +267,7 @@ class TestMCPResources:
         assert data["total_configured"] == 2
     
     @pytest.mark.asyncio
-    async def test_get_spend_categories(self, mock_data_manager):
+    async def test_get_spend_categories(self, mock_data_manager, mocker):
         """Test spend categories resource"""
         # Setup mock
         mock_data_manager.get_spend_categories.return_value = {
@@ -257,14 +278,17 @@ class TestMCPResources:
             "completeness_score": 0.85
         }
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_spend_categories()
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_spend_categories()
         
         # Parse JSON result
         data = json.loads(result)
@@ -276,7 +300,7 @@ class TestMCPResources:
         assert data["data_completeness"] == 0.85
     
     @pytest.mark.asyncio
-    async def test_get_recent_spend_overview(self, mock_data_manager):
+    async def test_get_recent_spend_overview(self, mock_data_manager, mocker):
         """Test recent spend overview resource"""
         # Setup mock
         mock_data_manager.get_spend_overview.return_value = {
@@ -288,14 +312,17 @@ class TestMCPResources:
             "trends": {"daily_average": 16666.67}
         }
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_recent_spend_overview()
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_recent_spend_overview()
         
         # Parse JSON result
         data = json.loads(result)
@@ -312,44 +339,50 @@ class TestErrorHandling:
     """Test error handling in various scenarios"""
     
     @pytest.mark.asyncio
-    async def test_data_source_connection_failure(self, mock_data_manager):
+    async def test_data_source_connection_failure(self, mock_data_manager, mocker):
         """Test handling of data source connection failures"""
         # Setup mock to raise exception
         mock_data_manager.get_spend_data.side_effect = Exception("Connection failed")
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_legal_spend_summary(
-                start_date="2024-01-01",
-                end_date="2024-03-31"
-            )
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_legal_spend_summary(
+            start_date="2024-01-01",
+            end_date="2024-03-31"
+        )
         
         assert "error" in result
         assert "Failed to get spend summary" in result["error"]
     
     @pytest.mark.asyncio
-    async def test_vendor_not_found(self, mock_data_manager):
+    async def test_vendor_not_found(self, mock_data_manager, mocker):
         """Test handling when vendor is not found"""
         # Setup mock to return empty list
         mock_data_manager.get_vendor_data.return_value = []
         
-        mock_ctx = Mock()
+        mock_ctx = mocker.Mock()
         mock_ctx.lifespan_context = ServerContext(
             data_manager=mock_data_manager,
             config={"test": True}
         )
         
-        with patch.object(mcp, 'request_context', mock_ctx):
-            result = await get_vendor_performance(
-                vendor_name="Non-existent Vendor",
-                start_date="2024-01-01",
-                end_date="2024-03-31"
-            )
+        mock_mcp_instance = mocker.Mock()
+        mock_mcp_instance.request_context = mock_ctx
+        mocker.patch("legal_spend_mcp.server.mcp", mock_mcp_instance)
+
+        result = await get_vendor_performance(
+            vendor_name="Non-existent Vendor",
+            start_date="2024-01-01",
+            end_date="2024-03-31"
+        )
         
         assert "error" in result
         assert "No data found for vendor" in result["error"]

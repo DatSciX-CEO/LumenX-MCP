@@ -99,7 +99,7 @@ build_package() {
         exit 1
     fi
     
-    if python3 -m build; then
+    if python3 -m pip install -e . && python3 -m build; then
         print_success "Package built successfully"
     else
         print_error "Package build failed"

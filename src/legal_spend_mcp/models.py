@@ -7,7 +7,7 @@ from enum import Enum
 class VendorType(str, Enum):
     """Vendor type enumeration"""
     LAW_FIRM = "Law Firm"
-    CONSULTANT = "Consultant" 
+    CONSULTANT = "Consultant"
     EXPERT_WITNESS = "Expert Witness"
     COURT_REPORTER = "Court Reporter"
     OTHER = "Other"
@@ -17,7 +17,7 @@ class PracticeArea(str, Enum):
     LITIGATION = "Litigation"
     CORPORATE = "Corporate"
     EMPLOYMENT = "Employment"
-    INTELLECTUAL_PROPERTY = "Intellectual Property" [cite: 312]
+    INTELLECTUAL_PROPERTY = "Intellectual Property"
     REGULATORY = "Regulatory"
     REAL_ESTATE = "Real Estate"
     TAX = "Tax"
@@ -38,11 +38,11 @@ class LegalSpendRecord:
     currency: str
     expense_category: str
     description: str
-    billing_period_start: Optional[date] = None [cite: 313]
-    billing_period_end: Optional[date] = None [cite: 313]
-    status: str = "approved" [cite: 313]
-    budget_code: Optional[str] = None [cite: 313]
-    source_system: Optional[str] = None [cite: 313]
+    billing_period_start: Optional[date] = None
+    billing_period_end: Optional[date] = None
+    status: str = "approved"
+    budget_code: Optional[str] = None
+    source_system: Optional[str] = None
 
 @dataclass
 class SpendSummary:
@@ -60,7 +60,7 @@ class SpendSummary:
 @dataclass
 class VendorPerformance:
     """Vendor performance metrics"""
-    vendor_name: str [cite: 314]
+    vendor_name: str
     total_spend: Decimal
     invoice_count: int
     average_invoice: Decimal

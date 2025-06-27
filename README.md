@@ -12,7 +12,7 @@ A Model Context Protocol (MCP) server for intelligent legal spend analysis acros
   - LegalTracker API integration
   - Database support (PostgreSQL, SQL Server, Oracle)
   - File imports (CSV, Excel)
-- **Comprehensive Analytics**: 
+- **Comprehensive Analytics**:
   - Spend summaries by period, department, practice area
   - Vendor performance analysis
   - Budget vs. actual comparisons
@@ -92,37 +92,11 @@ CSV_FILE_PATH=/path/to/legal_spend.csv
 
 ## 🚀 Quick Start
 
-### Running the Server
-
-```bash
-# Using the installed command
-legal-spend-mcp
-
-# Or using Python
-python -m legal_spend_mcp.server
-```
-
-### Configure with Claude Desktop
-
-Add to your Claude Desktop configuration (`claude_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "legal-spend": {
-      "command": "legal-spend-mcp",
-      "env": {
-        "LEGALTRACKER_ENABLED": "true",
-        "LEGALTRACKER_API_KEY": "your_api_key"
-      }
-    }
-  }
-}
-```
+Refer to the [QUICKSTART.md](QUICKSTART.md) for detailed instructions on how to get the server up and running.
 
 ## 📚 Available Tools
 
-### get_legal_spend_summary
+### `legal-spend-mcp://tools/get_legal_spend_summary`
 Get aggregated spend data with filtering options.
 
 **Parameters:**
@@ -142,7 +116,7 @@ result = await get_legal_spend_summary(
 )
 ```
 
-### get_vendor_performance
+### `legal-spend-mcp://tools/get_vendor_performance`
 Analyze performance metrics for a specific vendor.
 
 **Parameters:**
@@ -151,7 +125,7 @@ Analyze performance metrics for a specific vendor.
 - `end_date` (required): End date in YYYY-MM-DD format
 - `include_benchmarks` (optional): Include industry comparisons
 
-### get_budget_vs_actual
+### `legal-spend-mcp://tools/get_budget_vs_actual`
 Compare actual spending against budgeted amounts.
 
 **Parameters:**
@@ -160,7 +134,7 @@ Compare actual spending against budgeted amounts.
 - `end_date` (required): End date in YYYY-MM-DD format
 - `budget_amount` (required): Budget amount to compare
 
-### search_legal_transactions
+### `legal-spend-mcp://tools/search_legal_transactions`
 Search for specific transactions across all data sources.
 
 **Parameters:**
@@ -175,10 +149,10 @@ Search for specific transactions across all data sources.
 
 The server provides several MCP resources for reference data:
 
-- **legal_vendors**: List of all vendors across data sources
-- **data_sources**: Status and configuration of data sources
-- **spend_categories**: Available categories and practice areas
-- **spend_overview://recent**: Recent spend activity overview
+- [`legal-spend-mcp://resources/legal_vendors`](legal-spend-mcp://resources/legal_vendors): List of all vendors across data sources
+- [`legal-spend-mcp://resources/data_sources`](legal-spend-mcp://resources/data_sources): Status and configuration of data sources
+- [`legal-spend-mcp://resources/spend_categories`](legal-spend-mcp://resources/spend_categories): Available categories and practice areas
+- [`legal-spend-mcp://resources/spend_overview/recent`](legal-spend-mcp://resources/spend_overview/recent): Recent spend activity overview
 
 ## 🔌 Supported Data Sources
 
@@ -220,32 +194,11 @@ class LegalSpendRecord:
 
 ## 🧪 Testing
 
-Run the test suite:
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=legal_spend_mcp
-
-# Run specific test file
-pytest tests/test_server.py
-```
+Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to run tests.
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-Please ensure:
-- All tests pass
-- Code follows the project style guide
-- Documentation is updated
-- Commit messages are descriptive
+Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
 
 ## 📄 License
 
@@ -259,15 +212,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/DatSciX-CEO/LumenX-MCP/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/DatSciX-CEO/LumenX-MCP/discussions)
-- **Email**: patrick@datscix.com
+Refer to the [SUPPORT.md](SUPPORT.md) for information on how to get help.
 
 ## 🗺️ Roadmap
 
-- [ ] Additional data source integrations
-- [ ] Machine learning-based spend predictions
-- [ ] Automated anomaly detection
-- [ ] Enhanced benchmark analytics
-- [ ] GraphQL API support
-- [ ] Real-time notifications
+Refer to the [ROADMAP.md](ROADMAP.md) for future plans and features.
