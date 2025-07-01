@@ -568,6 +568,10 @@ class DataSourceManager:
                     f"Error initializing data source {name}: {e}"
                 )
 
+    def get_active_sources(self) -> List[str]:
+        """Get a list of the names of the active data sources."""
+        return list(self.sources.keys())
+
     async def get_spend_data(
         self,
         start_date: date,
@@ -617,6 +621,158 @@ class DataSourceManager:
                 logger.error(f"Error getting data from a source: {result}")
 
         return all_records
+
+    async def get_all_vendors(self) -> List[Dict[str, str]]:
+        """Get a list of all vendors from all data sources."""
+        tasks = [source.get_vendors() for source in self.sources.values()]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        all_vendors = {}
+        for result in results:
+            if isinstance(result, list):
+                for vendor in result:
+                    all_vendors[vendor['id']] = vendor
+        
+        return sorted(all_vendors.values(), key=lambda x: x['name'])
+
+    async def get_sources_status(self) -> List[Dict[str, Any]]:
+        """Get the status of all configured data sources."""
+        statuses = []
+        for name, source in self.sources.items():
+            is_connected = await source.test_connection()
+            statuses.append({
+                "name": name,
+                "type": source.config.type,
+                "status": "active" if is_connected else "disconnected",
+                "enabled": source.config.enabled
+            })
+        return statuses
+
+    async def get_spend_categories(self) -> Dict[str, Any]:
+        """Get all unique departments and practice areas."""
+        all_records = await self.get_spend_data(
+            start_date=date.today() - timedelta(days=365),
+            end_date=date.today()
+        )
+        
+        departments = sorted(list(set(r.department for r in all_records)))
+        practice_areas = sorted(list(set(r.practice_area.value for r in all_records)))
+        expense_categories = sorted(list(set(r.expense_category for r in all_records)))
+        
+        return {
+            "departments": departments,
+            "practice_areas": practice_areas,
+            "expense_categories": expense_categories
+        }
+
+    async def get_spend_overview(self, start_date: date, end_date: date) -> Dict[str, Any]:
+        """Get a high-level overview of spend activity."""
+        records = await self.get_spend_data(start_date, end_date)
+        if not records:
+            return {}
+
+        summary = await self.generate_summary(records, start_date, end_date)
+        
+        return {
+            "total_spend": summary.total_amount,
+            "transaction_count": summary.record_count,
+            "active_vendors": len(summary.top_vendors),
+            "top_categories": summary.by_practice_area,
+            "alerts": [],  # Placeholder for future alert logic
+            "trends": {}  # Placeholder for future trend analysis
+        }
+
+    async def get_vendor_data(self, vendor_name: str, start_date: date, end_date: date) -> List[LegalSpendRecord]:
+        """Get all spend data for a specific vendor."""
+        filters = {"vendor_name": vendor_name}
+        return await self.get_spend_data(start_date, end_date, filters)
+
+    async def get_department_spend(self, department: str, start_date: date, end_date: date) -> List[LegalSpendRecord]:
+        """Get all spend data for a specific department."""
+        filters = {"department": department}
+        return await self.get_spend_data(start_date, end_date, filters)
+
+    async def calculate_spend_trend(self, records: List[LegalSpendRecord]) -> Dict[str, Any]:
+        """Calculate the spend trend for a list of records."""
+        if not records:
+            return {"trend": "stable", "change_percentage": 0, "monthly_totals": {}}
+
+        monthly_spend = defaultdict(Decimal)
+        for record in records:
+            month_key = record.invoice_date.strftime("%Y-%m")
+            monthly_spend[month_key] += record.amount
+
+        sorted_months = sorted(monthly_spend.keys())
+        if len(sorted_months) < 2:
+            return {"trend": "stable", "change_percentage": 0, "monthly_totals": {k: float(v) for k, v in monthly_spend.items()}}
+
+        first_month_spend = monthly_spend[sorted_months[0]]
+        last_month_spend = monthly_spend[sorted_months[-1]]
+        
+        change = last_month_spend - first_month_spend
+        change_percentage = (change / first_month_spend * 100) if first_month_spend > 0 else 0
+
+        trend = "stable"
+        if change_percentage > 10:
+            trend = "increasing"
+        elif change_percentage < -10:
+            trend = "decreasing"
+
+        return {
+            "trend": trend,
+            "change_percentage": float(change_percentage),
+            "monthly_totals": {k: float(v) for k, v in monthly_spend.items()}
+        }
+
+    async def get_vendor_benchmarks(self, vendor_name: str) -> Dict[str, Any]:
+        """Get benchmark data for a vendor."""
+        # This is a placeholder for a more complex implementation
+        return {
+            "average_invoice_benchmark": 15000.0,
+            "cost_efficiency_score": 0.88,
+            "peer_comparison": "15% below industry average"
+        }
+
+    async def get_monthly_breakdown(self, records: List[LegalSpendRecord]) -> Dict[str, float]:
+        """Get a monthly breakdown of spend."""
+        monthly_spend = defaultdict(Decimal)
+        for record in records:
+            month_key = record.invoice_date.strftime("%Y-%m")
+            monthly_spend[month_key] += record.amount
+        return {k: float(v) for k, v in sorted(monthly_spend.items())}
+
+    async def generate_budget_recommendations(self, variance_pct: float, records: List[LegalSpendRecord]) -> List[str]:
+        """Generate recommendations based on budget variance."""
+        recommendations = []
+        if variance_pct > 10:
+            recommendations.append("Spending is significantly over budget. Review top expenses.")
+        elif variance_pct < -10:
+            recommendations.append("Spending is well under budget. Assess if resources are under-allocated.")
+        else:
+            recommendations.append("Spending is within the expected range.")
+        return recommendations
+
+    async def search_transactions(self, search_term: str, start_date: date, end_date: date, 
+                                  min_amount: Optional[float] = None, max_amount: Optional[float] = None, 
+                                  limit: int = 50) -> List[LegalSpendRecord]:
+        """Search for transactions across all data sources."""
+        all_records = await self.get_spend_data(start_date, end_date)
+        
+        search_term_lower = search_term.lower()
+        
+        filtered_records = [
+            r for r in all_records
+            if search_term_lower in r.vendor_name.lower() or
+               (r.matter_name and search_term_lower in r.matter_name.lower()) or
+               (r.description and search_term_lower in r.description.lower())
+        ]
+        
+        if min_amount is not None:
+            filtered_records = [r for r in filtered_records if r.amount >= Decimal(str(min_amount))]
+        if max_amount is not None:
+            filtered_records = [r for r in filtered_records if r.amount <= Decimal(str(max_amount))]
+            
+        return filtered_records[:limit]
 
     async def generate_summary(
         self,

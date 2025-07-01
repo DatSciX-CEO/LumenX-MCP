@@ -29,13 +29,23 @@ A Model Context Protocol (MCP) server for intelligent legal spend analysis acros
 
 ## 🛠️ Installation
 
-### Using pip
+### Using Docker (Recommended)
 
-```bash
-pip install legal-spend-mcp
-```
+For a consistent and isolated environment, we recommend using Docker.
+
+1.  **Build the Docker image:**
+    ```bash
+    docker build -t legal-spend-mcp .
+    ```
+
+2.  **Run the container:**
+    ```bash
+    docker run -d --name legal-spend-mcp -v ./.env:/app/.env -v ./data:/app/data legal-spend-mcp
+    ```
 
 ### From Source
+
+If you prefer to install from source:
 
 ```bash
 # Clone the repository
@@ -47,19 +57,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -e .
-```
-
-### Using uv (recommended)
-
-```bash
-# Install uv if not already installed
-pip install uv
-
-# Clone and install
-git clone https://github.com/DatSciX-CEO/LumenX-MCP.git
-cd LumenX-MCP
-uv pip install -e .
+pip install -e .[dev]
 ```
 
 ## ⚙️ Configuration
