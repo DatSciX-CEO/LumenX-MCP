@@ -257,7 +257,7 @@ def setup_mcp_client():
         config["mcpServers"] = {}
     
     # Get the current script directory
-    server_path = Path(__file__).parent.absolute()
+    server_path = Path.cwd()
     
     config["mcpServers"]["legal-spend"] = {
         "command": "python",

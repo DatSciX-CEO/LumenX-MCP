@@ -29,38 +29,43 @@ A Model Context Protocol (MCP) server for intelligent legal spend analysis acros
 
 ## 🛠️ Installation
 
-### Using pip
+### Using Docker (Recommended)
 
-```bash
-pip install legal-spend-mcp
-```
+For a consistent and isolated environment, we recommend using Docker.
+
+1.  **Build the Docker image:**
+    ```bash
+    docker build -t legal-spend-mcp .
+    ```
+
+2.  **Run the container:**
+    ```bash
+    docker run -d --name legal-spend-mcp -v ./.env:/app/.env -v ./data:/app/data legal-spend-mcp
+    ```
 
 ### From Source
 
-```bash
-# Clone the repository
-git clone https://github.com/DatSciX-CEO/LumenX-MCP.git
-cd LumenX-MCP
+If you prefer to install from source, you have two options:
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+1.  **Editable install (recommended for developers):** This uses the `pyproject.toml` file and is the best option if you plan to contribute.
+    ```bash
+    # Clone the repository
+    git clone https://github.com/DatSciX-CEO/LumenX-MCP.git
+    cd LumenX-MCP
 
-# Install dependencies
-pip install -e .
-```
+    # Create virtual environment
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-### Using uv (recommended)
+    # Install in editable mode with dev dependencies
+    pip install -e .[dev]
+    ```
 
-```bash
-# Install uv if not already installed
-pip install uv
-
-# Clone and install
-git clone https://github.com/DatSciX-CEO/LumenX-MCP.git
-cd LumenX-MCP
-uv pip install -e .
-```
+2.  **Using `requirements.txt`:** This is a standard way to install dependencies for deployment or general use.
+    ```bash
+    # After cloning and activating your virtual environment
+    pip install -r requirements.txt
+    ```
 
 ## ⚙️ Configuration
 
@@ -156,19 +161,27 @@ The server provides several MCP resources for reference data:
 
 ## 🔌 Supported Data Sources
 
-### LegalTracker API
-- Real-time invoice and matter data
-- Vendor management information
-- Practice area classifications
+### E-Billing & Matter Management
+- **LegalTracker**: Real-time invoice and matter data.
+- **SimpleLegal**: (Planned) Integration with SimpleLegal's API.
+- **Brightflag**: (Planned) Integration with Brightflag's API.
+- **TyMetrix 360**: (Planned) Integration with TyMetrix 360's API.
+- **Onit**: (Planned) Integration with Onit's API.
+
+### ERP Systems
+- **SAP**: Via SQL Server database connection.
+- **Oracle**: Via Oracle database connection.
+- **Microsoft Dynamics 365**: (Planned) Integration with Dynamics 365's API.
+- **NetSuite**: (Planned) Integration with NetSuite's API.
 
 ### Databases
-- **PostgreSQL**: Full support for legal spend tables
-- **SQL Server**: Compatible with SAP and other ERP systems
-- **Oracle**: Enterprise financial system integration
+- **PostgreSQL**: Full support for legal spend tables.
+- **SQL Server**: Compatible with SAP and other ERP systems.
+- **Oracle**: Enterprise financial system integration.
 
 ### File Imports
-- **CSV**: Standard comma-separated values
-- **Excel**: .xlsx files with configurable sheet names
+- **CSV**: Standard comma-separated values.
+- **Excel**: .xlsx files with configurable sheet names.
 
 ## 📝 Data Model
 

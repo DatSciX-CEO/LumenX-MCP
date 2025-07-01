@@ -267,13 +267,7 @@ deploy_production() {
     print_info "Preparing deployment package..."
     
     # Create deployment archive
-    tar -czf deploy.tar.gz \
-        src/ \
-        pyproject.toml \
-        README.md \
-        LICENSE \
-        .env.template \
-        requirements.txt
+    tar -czf deploy.tar.gz         src/         pyproject.toml         README.md         LICENSE         .env.template
     
     print_info "Copying files to production server..."
     

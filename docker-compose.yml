@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  legal-spend-mcp:
+    build: .
+    container_name: legal-spend-mcp
+    # Mount the .env file for configuration
+    volumes:
+      - ./.env:/app/.env
+      # Mount the data directory to provide local files to the container
+      - ./data:/app/data
+    # The server itself doesn't expose a port, but this is here for future-proofing
+    # if a web-based UI or health check endpoint is added.
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
