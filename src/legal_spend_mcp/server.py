@@ -13,7 +13,7 @@ import time
 from functools import wraps
 import structlog
 
-from .config import load_config
+from .config import load_validated_config as load_config
 from .data_sources import create_data_source, DataSourceManager
 from .models import LegalSpendRecord, SpendSummary
 

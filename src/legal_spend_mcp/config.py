@@ -114,6 +114,85 @@ def load_config() -> Dict[str, Any]:
                 "sheet_name": os.getenv("EXCEL_SHEET_NAME", "Sheet1"),
             }
         ))
+
+    # SimpleLegal API configuration
+    if os.getenv("SIMPLELEGAL_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="simplelegal",
+            type="api",
+            enabled=True,
+            connection_params={
+                "api_key": os.getenv("SIMPLELEGAL_API_KEY"),
+                "base_url": os.getenv("SIMPLELEGAL_BASE_URL", "https://api.simplelegal.com"),
+            }
+        ))
+
+    # Brightflag API configuration
+    if os.getenv("BRIGHTFLAG_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="brightflag",
+            type="api",
+            enabled=True,
+            connection_params={
+                "api_key": os.getenv("BRIGHTFLAG_API_KEY"),
+                "base_url": os.getenv("BRIGHTFLAG_BASE_URL", "https://api.brightflag.com"),
+            }
+        ))
+
+    # TyMetrix 360 API configuration
+    if os.getenv("TYMETRIX_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="tymetrix",
+            type="api",
+            enabled=True,
+            connection_params={
+                "client_id": os.getenv("TYMETRIX_CLIENT_ID"),
+                "client_secret": os.getenv("TYMETRIX_CLIENT_SECRET"),
+                "base_url": os.getenv("TYMETRIX_BASE_URL", "https://api.tymetrix.com"),
+            }
+        ))
+
+    # Onit API configuration
+    if os.getenv("ONIT_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="onit",
+            type="api",
+            enabled=True,
+            connection_params={
+                "api_key": os.getenv("ONIT_API_KEY"),
+                "base_url": os.getenv("ONIT_BASE_URL"), # No default, must be provided
+            }
+        ))
+
+    # Microsoft Dynamics 365 configuration
+    if os.getenv("DYNAMICS365_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="dynamics365",
+            type="api",
+            enabled=True,
+            connection_params={
+                "client_id": os.getenv("DYNAMICS365_CLIENT_ID"),
+                "client_secret": os.getenv("DYNAMICS365_CLIENT_SECRET"),
+                "tenant_id": os.getenv("DYNAMICS365_TENANT_ID"),
+                "resource": os.getenv("DYNAMICS365_RESOURCE"), # Customer-specific API endpoint
+            }
+        ))
+
+    # NetSuite configuration
+    if os.getenv("NETSUITE_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="netsuite",
+            type="api",
+            enabled=True,
+            connection_params={
+                "account_id": os.getenv("NETSUITE_ACCOUNT_ID"),
+                "consumer_key": os.getenv("NETSUITE_CONSUMER_KEY"),
+                "consumer_secret": os.getenv("NETSUITE_CONSUMER_SECRET"),
+                "token_id": os.getenv("NETSUITE_TOKEN_ID"),
+                "token_secret": os.getenv("NETSUITE_TOKEN_SECRET"),
+                "base_url": os.getenv("NETSUITE_BASE_URL"), # e.g., https://<account_id>.suitetalk.api.netsuite.com
+            }
+        ))
     
     return config
 
@@ -139,15 +218,26 @@ class DatabaseConfig(BaseModel):
         return v
 
 class APIConfig(BaseModel):
-    api_key: str
     base_url: str
+    api_key: Optional[str] = None
     timeout: int = 30
-    
-    @validator('api_key')
-    def validate_api_key(cls, v):
-        if len(v) < 10:
-            raise ValueError('API key too short')
-        return v
+
+class OAuth2ClientCredentialsConfig(BaseModel):
+    base_url: str
+    client_id: str
+    client_secret: str
+
+class Dynamics365Config(OAuth2ClientCredentialsConfig):
+    tenant_id: str
+    resource: str
+
+class NetSuiteConfig(BaseModel):
+    account_id: str
+    consumer_key: str
+    consumer_secret: str
+    token_id: str
+    token_secret: str
+    base_url: Optional[str] # Optional, can be derived from account_id
 
 def load_validated_config() -> Dict[str, Any]:
     try:
@@ -157,7 +247,16 @@ def load_validated_config() -> Dict[str, Any]:
             if source.type == "database":
                 DatabaseConfig(**source.connection_params)
             elif source.type == "api":
-                APIConfig(**source.connection_params)
+                if source.name == "tymetrix":
+                    OAuth2ClientCredentialsConfig(**source.connection_params)
+                elif source.name == "dynamics365":
+                    Dynamics365Config(**source.connection_params)
+                elif source.name == "netsuite":
+                    NetSuiteConfig(**source.connection_params)
+                else:
+                    APIConfig(**source.connection_params)
         return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation failed: {e}")
+    except Exception as e:
+        raise ValueError(f"An unexpected error occurred during configuration loading: {e}")

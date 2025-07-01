@@ -21,6 +21,8 @@ dependencies = [
     "psycopg2-binary>=2.9.0",
     "openpyxl>=3.1.0",
     "aiofiles>=23.0.0",
+    "msal>=1.20.0",
+    "netsuitesdk>=2.0.0",
 ]
 
 [project.optional-dependencies]
