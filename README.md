@@ -45,7 +45,16 @@ For a consistent and isolated environment, we recommend using Docker.
 
 ### From Source
 
+<<<<<<< HEAD
 If you prefer to install from source, you have two options:
+=======
+If you prefer to install from source:
+
+```bash
+# Clone the repository
+git clone https://github.com/DatSciX-CEO/LumenX-MCP.git
+cd LumenX-MCP
+>>>>>>> 7d22fe718ed2de01113e744a44ac6d373ee3e75e
 
 1.  **Editable install (recommended for developers):** This uses the `pyproject.toml` file and is the best option if you plan to contribute.
     ```bash
@@ -53,6 +62,7 @@ If you prefer to install from source, you have two options:
     git clone https://github.com/DatSciX-CEO/LumenX-MCP.git
     cd LumenX-MCP
 
+<<<<<<< HEAD
     # Create virtual environment
     python -m venv venv
     source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -66,6 +76,11 @@ If you prefer to install from source, you have two options:
     # After cloning and activating your virtual environment
     pip install -r requirements.txt
     ```
+=======
+# Install dependencies
+pip install -e .[dev]
+```
+>>>>>>> 7d22fe718ed2de01113e744a44ac6d373ee3e75e
 
 ## ⚙️ Configuration
 
