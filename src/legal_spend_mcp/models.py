@@ -3,6 +3,14 @@ from datetime import date
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from enum import Enum
+import datetime
+
+class ErrorCode(str, Enum):
+    INVALID_INPUT = "INVALID_INPUT"
+    DATA_SOURCE_ERROR = "DATA_SOURCE_ERROR"
+    NOT_FOUND = "NOT_FOUND"
+    TIMEOUT = "TIMEOUT"
+    AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR"
 
 class VendorType(str, Enum):
     """Vendor type enumeration"""
@@ -67,3 +75,19 @@ class VendorPerformance:
     matters_count: int
     performance_score: float
     trend: str  # "increasing", "decreasing", "stable"
+
+@dataclass
+class MCPError:
+    code: ErrorCode
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    
+def create_error_response(code: ErrorCode, message: str, details: Optional[Dict] = None):
+    return {
+        "error": {
+            "code": code.value,
+            "message": message,
+            "details": details or {},
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    }

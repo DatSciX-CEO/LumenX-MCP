@@ -8,6 +8,10 @@ import asyncio
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+import logging
+import time
+from functools import wraps
+import structlog
 
 from .config import load_config
 from .data_sources import create_data_source, DataSourceManager
@@ -51,7 +55,60 @@ mcp = FastMCP(
 # MCP TOOLS (Following Official Patterns)
 # ===========================================
 
+
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.JSONRenderer()
+    ],
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger()
+
+def monitor_performance(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.time()
+        tool_name = func.__name__
+        
+        try:
+            logger.info("Tool execution started", tool=tool_name, args=len(args), kwargs=list(kwargs.keys()))
+            result = await func(*args, **kwargs)
+            execution_time = time.time() - start_time
+            
+            logger.info(
+                "Tool execution completed",
+                tool=tool_name,
+                execution_time=execution_time,
+                success=True,
+                result_size=len(str(result)) if result else 0
+            )
+            return result
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(
+                "Tool execution failed",
+                tool=tool_name,
+                execution_time=execution_time,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            raise
+    return wrapper
 @mcp.tool()
+@monitor_performance
+@validate_inputs
 async def get_legal_spend_summary(
     start_date: str,
     end_date: str,

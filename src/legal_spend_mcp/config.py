@@ -1,7 +1,8 @@
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from dotenv import load_dotenv
+from pydantic import BaseModel, ValidationError, validator
 
 @dataclass
 class DataSourceConfig:
@@ -115,3 +116,48 @@ def load_config() -> Dict[str, Any]:
         ))
     
     return config
+
+class DatabaseConfig(BaseModel):
+    driver: str
+    host: str
+    port: int
+    database: str
+    username: str
+    password: str
+    
+    @validator('port')
+    def validate_port(cls, v):
+        if not 1 <= v <= 65535:
+            raise ValueError('Port must be between 1 and 65535')
+        return v
+    
+    @validator('driver')
+    def validate_driver(cls, v):
+        allowed_drivers = ['postgresql', 'mssql', 'oracle']
+        if v not in allowed_drivers:
+            raise ValueError(f'Driver must be one of {allowed_drivers}')
+        return v
+
+class APIConfig(BaseModel):
+    api_key: str
+    base_url: str
+    timeout: int = 30
+    
+    @validator('api_key')
+    def validate_api_key(cls, v):
+        if len(v) < 10:
+            raise ValueError('API key too short')
+        return v
+
+def load_validated_config() -> Dict[str, Any]:
+    try:
+        config = load_config()
+        # Validate each data source config
+        for source in config.get("data_sources", []):
+            if source.type == "database":
+                DatabaseConfig(**source.connection_params)
+            elif source.type == "api":
+                APIConfig(**source.connection_params)
+        return config
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation failed: {e}")
