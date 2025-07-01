@@ -579,3 +579,26 @@ class TestDataSourceFactory:
         
         with pytest.raises(ValueError, match="Unknown data source type"):
             create_data_source(config)
+
+    @pytest.mark.parametrize("source_name, expected_class", [
+        ("simplelegal", "SimpleLegalDataSource"),
+        ("brightflag", "BrightflagDataSource"),
+        ("tymetrix", "TyMetrixDataSource"),
+        ("onit", "OnitDataSource"),
+        ("dynamics365", "Dynamics365DataSource"),
+        ("netsuite", "NetSuiteDataSource"),
+    ])
+    def test_create_new_api_data_sources(self, source_name, expected_class, mocker):
+        """Test creating new placeholder API data sources"""
+        config = DataSourceConfig(
+            name=source_name,
+            type="api",
+            enabled=True,
+            connection_params={"api_key": "test", "base_url": "https://test.api.com"} # Dummy params
+        )
+        
+        # Mock the placeholder classes to avoid actual implementation
+        mocker.patch(f'legal_spend_mcp.data_sources.{expected_class}')
+        
+        source = create_data_source(config)
+        assert source.config.name == source_name

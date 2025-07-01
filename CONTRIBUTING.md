@@ -33,17 +33,18 @@ source venv/bin/activate
 
 ### 3. Install Dependencies
 
-This project uses `pyproject.toml` to manage dependencies. You can install the project in editable mode along with all development dependencies.
+For development, you can install all dependencies using one of the following methods:
 
-**Using `pip`:**
+**Using `pyproject.toml` (recommended):**
+This is the preferred method as it uses the primary dependency definition.
 ```bash
 pip install -e ".[dev]"
 ```
 
-**Using `uv` (faster):**
-If you have `uv` installed (`pip install uv`), you can use it for a faster experience:
+**Using `requirements-dev.txt`:**
+This file contains all core and development dependencies.
 ```bash
-uv pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 ```
 
 ## Running Tests
