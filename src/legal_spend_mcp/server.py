@@ -106,6 +106,55 @@ def monitor_performance(func):
             )
             raise
     return wrapper
+
+def validate_inputs(func):
+    """Decorator to validate input parameters for MCP tools."""
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        # Validate date formats
+        if 'start_date' in kwargs:
+            try:
+                datetime.strptime(kwargs['start_date'], "%Y-%m-%d")
+            except ValueError:
+                return {"error": "Invalid start_date format. Use YYYY-MM-DD"}
+        
+        if 'end_date' in kwargs:
+            try:
+                datetime.strptime(kwargs['end_date'], "%Y-%m-%d")
+            except ValueError:
+                return {"error": "Invalid end_date format. Use YYYY-MM-DD"}
+        
+        # Validate numeric inputs
+        if 'budget_amount' in kwargs:
+            try:
+                float(kwargs['budget_amount'])
+            except (ValueError, TypeError):
+                return {"error": "Invalid budget_amount. Must be a number"}
+        
+        if 'min_amount' in kwargs and kwargs['min_amount'] is not None:
+            try:
+                float(kwargs['min_amount'])
+            except (ValueError, TypeError):
+                return {"error": "Invalid min_amount. Must be a number"}
+        
+        if 'max_amount' in kwargs and kwargs['max_amount'] is not None:
+            try:
+                float(kwargs['max_amount'])
+            except (ValueError, TypeError):
+                return {"error": "Invalid max_amount. Must be a number"}
+        
+        # Validate string inputs
+        if 'department' in kwargs and kwargs['department']:
+            if not isinstance(kwargs['department'], str) or len(kwargs['department'].strip()) == 0:
+                return {"error": "Department must be a non-empty string"}
+        
+        if 'vendor_name' in kwargs:
+            if not isinstance(kwargs['vendor_name'], str) or len(kwargs['vendor_name'].strip()) == 0:
+                return {"error": "Vendor name must be a non-empty string"}
+        
+        return await func(*args, **kwargs)
+    return wrapper
+
 @mcp.tool()
 @monitor_performance
 @validate_inputs
