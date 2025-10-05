@@ -6,41 +6,16 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 import logging
-from abc import ABC, abstractmethod
+from .interfaces import DataSourceInterface
 from collections import defaultdict
 import hashlib
 import os
 from .models import LegalSpendRecord, SpendSummary, VendorType, PracticeArea, VendorPerformance
 from .config import DataSourceConfig
+from .registry import registry
+from . import unimplemented_data_sources
 
 logger = logging.getLogger(__name__)
-
-
-class DataSourceInterface(ABC):
-    """Abstract base class for data sources following MCP patterns."""
-
-    def __init__(self, config: 'DataSourceConfig'):
-        self.config = config
-
-    @abstractmethod
-    async def get_spend_data(
-        self,
-        start_date: date,
-        end_date: date,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> List['LegalSpendRecord']:
-        """Retrieve spend data for a given period."""
-        pass
-
-    @abstractmethod
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        """Get list of all vendors."""
-        pass
-
-    @abstractmethod
-    async def test_connection(self) -> bool:
-        """Test if data source is accessible."""
-        pass
 
 
 class RateLimiter:
@@ -177,6 +152,7 @@ class LegalTrackerDataSource(DataSourceInterface):
 
 class DatabaseDataSource(DataSourceInterface):
     """Database data source base class."""
+    registration_key = "database"
 
     def __init__(self, config: 'DataSourceConfig'):
         super().__init__(config)
@@ -329,6 +305,8 @@ class DatabaseDataSource(DataSourceInterface):
 
 class FileDataSource(DataSourceInterface):
     """File-based data source (CSV, Excel)."""
+    registration_key = "file"
+
     def __init__(self, config: 'DataSourceConfig'):
         super().__init__(config)
         self.file_path = self.config.connection_params.get("file_path")
@@ -546,9 +524,8 @@ class DataSourceManager:
 
     async def initialize_sources(self, config: Dict[str, Any]):
         """Initialize data sources from a configuration dictionary."""
-        for source_config_dict in config.get("data_sources", []):
+        for source_config in config.get("data_sources", []):
             try:
-                source_config = DataSourceConfig(**source_config_dict)
                 if not source_config.enabled:
                     continue
 
@@ -563,7 +540,7 @@ class DataSourceManager:
                         f"Failed to connect to data source: {source_config.name}"
                     )
             except Exception as e:
-                name = source_config_dict.get('name', 'Unknown')
+                name = source_config.name if hasattr(source_config, 'name') else 'Unknown'
                 logger.error(
                     f"Error initializing data source {name}: {e}"
                 )
@@ -846,115 +823,20 @@ class DataSourceManager:
 
 
 def create_data_source(config: 'DataSourceConfig') -> DataSourceInterface:
-    """Factory function to create data source instances."""
+    """Factory function to create data source instances using the registry."""
+    source_name = config.name.lower()
     source_type = config.type.lower()
 
-    if source_type == "api":
-        if "legaltracker" in config.name.lower():
-            return LegalTrackerDataSource(config)
-        if "simplelegal" in config.name.lower():
-            return SimpleLegalDataSource(config)
-        if "brightflag" in config.name.lower():
-            return BrightflagDataSource(config)
-        if "tymetrix" in config.name.lower():
-            return TyMetrixDataSource(config)
-        if "onit" in config.name.lower():
-            return OnitDataSource(config)
-        if "dynamics365" in config.name.lower():
-            return Dynamics365DataSource(config)
-        if "netsuite" in config.name.lower():
-            return NetSuiteDataSource(config)
-        raise ValueError(f"Unknown API source name: {config.name}")
+    # For APIs, the registration key is the specific name (e.g., 'legaltracker').
+    # For other types, it's the generic type (e.g., 'database', 'file').
+    registration_key = source_name if source_type == "api" else source_type
 
-    if source_type == "database":
-        return DatabaseDataSource(config)
+    try:
+        source_class = registry.get_source_class(registration_key)
+        return source_class(config)
+    except ValueError:
+        raise ValueError(
+            f"No data source registered for key '{registration_key}' "
+            f"(name: '{source_name}', type: '{source_type}')"
+        )
 
-    if source_type == "file":
-        return FileDataSource(config)
-
-    raise ValueError(f"Unknown data source type: {config.type}")
-
-
-class SimpleLegalDataSource(DataSourceInterface):
-    """Data source for the SimpleLegal API."""
-    async def get_spend_data(self, start_date: date, end_date: date, filters: Optional[Dict[str, Any]] = None) -> List[LegalSpendRecord]:
-        logger.warning("SimpleLegalDataSource is not yet implemented.")
-        return []
-
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        logger.warning("SimpleLegalDataSource is not yet implemented.")
-        return []
-
-    async def test_connection(self) -> bool:
-        logger.warning("SimpleLegalDataSource is not yet implemented.")
-        return False
-
-class BrightflagDataSource(DataSourceInterface):
-    """Data source for the Brightflag API."""
-    async def get_spend_data(self, start_date: date, end_date: date, filters: Optional[Dict[str, Any]] = None) -> List[LegalSpendRecord]:
-        logger.warning("BrightflagDataSource is not yet implemented.")
-        return []
-
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        logger.warning("BrightflagDataSource is not yet implemented.")
-        return []
-
-    async def test_connection(self) -> bool:
-        logger.warning("BrightflagDataSource is not yet implemented.")
-        return False
-
-class TyMetrixDataSource(DataSourceInterface):
-    """Data source for the TyMetrix 360 API."""
-    async def get_spend_data(self, start_date: date, end_date: date, filters: Optional[Dict[str, Any]] = None) -> List[LegalSpendRecord]:
-        logger.warning("TyMetrixDataSource is not yet implemented.")
-        return []
-
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        logger.warning("TyMetrixDataSource is not yet implemented.")
-        return []
-
-    async def test_connection(self) -> bool:
-        logger.warning("TyMetrixDataSource is not yet implemented.")
-        return False
-
-class OnitDataSource(DataSourceInterface):
-    """Data source for the Onit API."""
-    async def get_spend_data(self, start_date: date, end_date: date, filters: Optional[Dict[str, Any]] = None) -> List[LegalSpendRecord]:
-        logger.warning("OnitDataSource is not yet implemented.")
-        return []
-
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        logger.warning("OnitDataSource is not yet implemented.")
-        return []
-
-    async def test_connection(self) -> bool:
-        logger.warning("OnitDataSource is not yet implemented.")
-        return False
-
-class Dynamics365DataSource(DataSourceInterface):
-    """Data source for Microsoft Dynamics 365."""
-    async def get_spend_data(self, start_date: date, end_date: date, filters: Optional[Dict[str, Any]] = None) -> List[LegalSpendRecord]:
-        logger.warning("Dynamics365DataSource is not yet implemented.")
-        return []
-
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        logger.warning("Dynamics365DataSource is not yet implemented.")
-        return []
-
-    async def test_connection(self) -> bool:
-        logger.warning("Dynamics365DataSource is not yet implemented.")
-        return False
-
-class NetSuiteDataSource(DataSourceInterface):
-    """Data source for NetSuite."""
-    async def get_spend_data(self, start_date: date, end_date: date, filters: Optional[Dict[str, Any]] = None) -> List[LegalSpendRecord]:
-        logger.warning("NetSuiteDataSource is not yet implemented.")
-        return []
-
-    async def get_vendors(self) -> List[Dict[str, str]]:
-        logger.warning("NetSuiteDataSource is not yet implemented.")
-        return []
-
-    async def test_connection(self) -> bool:
-        logger.warning("NetSuiteDataSource is not yet implemented.")
-        return False
