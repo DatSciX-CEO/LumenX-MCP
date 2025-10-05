@@ -87,7 +87,7 @@ class TestMCPTools:
         )
         
         assert "error" in result
-        assert "Invalid date format" in result["error"]
+        assert "Invalid start_date format" in result["error"]
     
     @pytest.mark.asyncio
     async def test_get_vendor_performance_success(self, mock_data_manager, sample_spend_records, mocker):
