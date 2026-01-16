@@ -193,6 +193,18 @@ def load_config() -> Dict[str, Any]:
                 "base_url": os.getenv("NETSUITE_BASE_URL"), # e.g., https://<account_id>.suitetalk.api.netsuite.com
             }
         ))
+
+    # eDiscovery Mock configuration
+    if os.getenv("EDISCOVERY_ENABLED", "false").lower() == "true":
+        config["data_sources"].append(DataSourceConfig(
+            name="ediscovery",
+            type="api",
+            enabled=True,
+            connection_params={
+                "api_key": os.getenv("EDISCOVERY_API_KEY", "mock_key"),
+                "base_url": os.getenv("EDISCOVERY_BASE_URL", "https://api.mockediscovery.com"),
+            }
+        ))
     
     return config
 
