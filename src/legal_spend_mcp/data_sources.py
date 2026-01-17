@@ -10,6 +10,7 @@ from .interfaces import DataSourceInterface
 from collections import defaultdict
 import hashlib
 import os
+import json
 from .models import LegalSpendRecord, SpendSummary, VendorType, PracticeArea, VendorPerformance
 from .config import DataSourceConfig
 from .registry import registry
@@ -352,6 +353,14 @@ class FileDataSource(DataSourceInterface):
                     vendor_type = next((vt for vt in VendorType if vt.value.lower() == row.get('vendor_type', '').lower()), VendorType.LAW_FIRM)
                     practice_area = next((pa for pa in PracticeArea if pa.value.lower() == row.get('practice_area', '').lower()), PracticeArea.GENERAL)
 
+                    # Parse metadata if present (expects JSON string)
+                    metadata = None
+                    if row.get('metadata'):
+                        try:
+                            metadata = json.loads(row.get('metadata'))
+                        except json.JSONDecodeError:
+                            logger.warning(f"Invalid metadata JSON for invoice {row.get('invoice_id')}")
+
                     record = LegalSpendRecord(
                         invoice_id=row['invoice_id'],
                         vendor_name=row['vendor_name'],
@@ -369,7 +378,8 @@ class FileDataSource(DataSourceInterface):
                         billing_period_end=datetime.strptime(row['billing_period_end'], "%Y-%m-%d").date() if row.get('billing_period_end') else None,
                         status=row.get('status', 'approved'),
                         budget_code=row.get('budget_code'),
-                        source_system=f"File-{self.file_type}"
+                        source_system=f"File-{self.file_type}",
+                        metadata=metadata
                     )
                     records.append(record)
                 except Exception as e:
@@ -390,6 +400,17 @@ class FileDataSource(DataSourceInterface):
                 vendor_type = next((vt for vt in VendorType if vt.value.lower() == str(row.get('vendor_type', '')).lower()), VendorType.LAW_FIRM)
                 practice_area = next((pa for pa in PracticeArea if pa.value.lower() == str(row.get('practice_area', '')).lower()), PracticeArea.GENERAL)
 
+                # Parse metadata if present
+                metadata = None
+                if 'metadata' in row and pd.notna(row['metadata']):
+                    try:
+                        if isinstance(row['metadata'], str):
+                            metadata = json.loads(row['metadata'])
+                        elif isinstance(row['metadata'], dict):
+                            metadata = row['metadata']
+                    except json.JSONDecodeError:
+                         logger.warning(f"Invalid metadata JSON for invoice {row.get('invoice_id')}")
+
                 record = LegalSpendRecord(
                     invoice_id=str(row['invoice_id']),
                     vendor_name=str(row['vendor_name']),
@@ -405,7 +426,8 @@ class FileDataSource(DataSourceInterface):
                     description=str(row.get('description', '')),
                     status=str(row.get('status', 'approved')),
                     budget_code=str(row.get('budget_code')) if pd.notna(row.get('budget_code')) else None,
-                    source_system=f"File-{self.file_type}"
+                    source_system=f"File-{self.file_type}",
+                    metadata=metadata
                 )
                 records.append(record)
             except Exception as e:
@@ -466,6 +488,87 @@ class FileDataSource(DataSourceInterface):
             return self._data_cache is not None
         except Exception:
             return False
+
+
+class EDiscoveryDataSource(DataSourceInterface):
+    """
+    Mock data source for eDiscovery spend.
+    In a real scenario, this would connect to Relativity, Nuix, or similar platforms' APIs.
+    """
+    registration_key = "ediscovery"
+
+    def __init__(self, config: 'DataSourceConfig'):
+        super().__init__(config)
+        self.base_url = self.config.connection_params.get("base_url")
+        self.api_key = self.config.connection_params.get("api_key")
+
+    async def get_spend_data(
+        self,
+        start_date: date,
+        end_date: date,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List['LegalSpendRecord']:
+        """
+        Generate mock eDiscovery spend data.
+        """
+        # Simulate API latency
+        await asyncio.sleep(0.1)
+
+        records = []
+        # Mock data generation
+        mock_vendors = [
+            ("Lighthouse", VendorType.EDISCOVERY_VENDOR),
+            ("Consilio", VendorType.EDISCOVERY_VENDOR),
+            ("Relativity", VendorType.HOSTING_PROVIDER),
+            ("FTI Consulting", VendorType.FORENSICS),
+        ]
+
+        current_date = start_date
+        while current_date <= end_date:
+            if current_date.day == 1: # Generate monthly invoices
+                for i, (vendor, v_type) in enumerate(mock_vendors):
+                     # Random variations
+                    amount = Decimal(5000 + (current_date.month * 100) + (i * 1000))
+
+                    metadata = {
+                        "gb_hosted": 150 + (i * 10),
+                        "users_active": 5 + i,
+                        "processing_gb": 50 if v_type == VendorType.EDISCOVERY_VENDOR else 0
+                    }
+
+                    record = LegalSpendRecord(
+                        invoice_id=f"ED-{current_date.strftime('%Y%m')}-{i}",
+                        vendor_name=vendor,
+                        vendor_type=v_type,
+                        matter_id=f"MAT-{current_date.year}-00{i+1}",
+                        matter_name=f"Project {chr(65+i)} Litigation",
+                        department="Legal Ops",
+                        practice_area=PracticeArea.EDISCOVERY,
+                        invoice_date=current_date,
+                        amount=amount,
+                        currency="USD",
+                        expense_category="Hosting" if v_type == VendorType.HOSTING_PROVIDER else "Services",
+                        description=f"Monthly {v_type.value} Services for {current_date.strftime('%B %Y')}",
+                        billing_period_start=current_date,
+                        billing_period_end=(current_date + timedelta(days=30)),
+                        source_system="eDiscovery Platform",
+                        metadata=metadata
+                    )
+                    records.append(record)
+            current_date += timedelta(days=1)
+
+        return records
+
+    async def get_vendors(self) -> List[Dict[str, str]]:
+        return [
+            {"id": "v1", "name": "Lighthouse", "type": VendorType.EDISCOVERY_VENDOR, "source": "eDiscovery"},
+            {"id": "v2", "name": "Consilio", "type": VendorType.EDISCOVERY_VENDOR, "source": "eDiscovery"},
+            {"id": "v3", "name": "Relativity", "type": VendorType.HOSTING_PROVIDER, "source": "eDiscovery"},
+            {"id": "v4", "name": "FTI Consulting", "type": VendorType.FORENSICS, "source": "eDiscovery"},
+        ]
+
+    async def test_connection(self) -> bool:
+        return True
 
 
 class CacheManager:

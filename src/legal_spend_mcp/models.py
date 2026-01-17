@@ -18,6 +18,9 @@ class VendorType(str, Enum):
     CONSULTANT = "Consultant"
     EXPERT_WITNESS = "Expert Witness"
     COURT_REPORTER = "Court Reporter"
+    EDISCOVERY_VENDOR = "eDiscovery Vendor"
+    HOSTING_PROVIDER = "Hosting Provider"
+    FORENSICS = "Forensics"
     OTHER = "Other"
 
 class PracticeArea(str, Enum):
@@ -29,6 +32,7 @@ class PracticeArea(str, Enum):
     REGULATORY = "Regulatory"
     REAL_ESTATE = "Real Estate"
     TAX = "Tax"
+    EDISCOVERY = "eDiscovery"
     GENERAL = "General"
 
 @dataclass
@@ -51,6 +55,7 @@ class LegalSpendRecord:
     status: str = "approved"
     budget_code: Optional[str] = None
     source_system: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 @dataclass
 class SpendSummary:
